@@ -11,6 +11,20 @@ commands:
                     echo "Destroying environment: ${CIRCLE_WORKFLOW_ID:0:7} "
                     aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
                     aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
+    revert-migrations:
+        description: Revert the last migration
+        steps:
+            - run:
+                name: Revert migrations
+                when: on_fail
+                command: |
+                    SUCCESS=$(curl --insecure  https://kvdb.io/NMLDwBvMsDdGaz8tvc99YC/migration_${CIRCLE_WORKFLOW_ID:0:7})
+                    if (( $SUCCESS == 1 ));
+                    then
+                        cd ~/project/backend
+                        npm install
+                        npm run migration:revert
+                    fi  
 
 jobs:
     build-frontend:
