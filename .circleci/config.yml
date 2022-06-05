@@ -156,10 +156,11 @@ jobs:
             - run:
                 name: Add back-end ip to ansible inventory
                 command: |
-                    aws ec2 describe-instances \
+                    BACKEND_IP=(aws ec2 describe-instances \
                     --query 'Reservations[*].Instances[*].PublicIpAddress' \
                     --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-                    --output text >> .circleci/ansible/inventory.txt
+                    --output text >> .circleci/ansible/inventory.txt --region us-east-1)
+                    echo ${BACKEND_IP} >> .circleci/ansible/inventory.txt
             - persist_to_workspace:
                 root: ~/
                 paths:
@@ -216,12 +217,9 @@ jobs:
             - run:
                 name: Get backend url
                 command: |
-                    BACKEND_IP=$(aws ec2 describe-instances --filters Name=tag:Name,Values="backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+                    BACKEND_IP=$(aws ec2 describe-instances --filters Name=tag:Name,Values="backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text --region us-east-1)
                     echo ${BACKEND_IP}
                     export API_URL="http://${BACKEND_IP}:3030"
-            - run:
-                name: Deploy frontend objects
-                command: |
                     cd frontend
                     npm install
                     npm run build
@@ -270,7 +268,7 @@ jobs:
             - run:
                 name: Backend smoke test.
                 command: |
-                    BACKEND_IP=$(aws ec2 describe-instances --filters Name=tag:Name,Values="backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+                    BACKEND_IP=$(aws ec2 describe-instances --filters Name=tag:Name,Values="backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text --region us-east-1)
                     echo ${BACKEND_IP}
                     if curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
                     then
